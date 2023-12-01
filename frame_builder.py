@@ -1,7 +1,9 @@
+import os
 import subprocess
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter.messagebox import askokcancel
 
 
 class FFmpegUI:
@@ -18,6 +20,8 @@ class FFmpegUI:
         # Buttons
         self.convert_button = None
         self.output_path_button = None
+        self.start_capture_button = None
+        self.stop_capture_button = None
 
         # Resolution
         self.resolutions = ["1920x1080", "1280x720", "640x480"]
@@ -31,7 +35,7 @@ class FFmpegUI:
 
         # Paths
         self.input_file_path = None
-        self.output_path_path = None
+        self.output_file_path = None
 
         # Main windows setup
         main.title("FFmpeg GUI")
@@ -127,10 +131,10 @@ class FFmpegUI:
         output_path = filedialog.asksaveasfilename(defaultextension=".mp4",
                                                    filetypes=[("Video files", "*.mp4;*.avi;*.mkv")])
         print(" Output:", output_path)
-        self.output_path_path = output_path
+        self.output_file_path = output_path
         self.output_file_label.config(state="normal")
         self.output_file_label.delete(0, "end")
-        self.output_file_label.insert(0, self.output_path_path)
+        self.output_file_label.insert(0, self.output_file_path)
         self.output_file_label.config(state="readonly")
 
     def convert(self):
@@ -157,7 +161,7 @@ class FFmpegUI:
             "-c:a", "aac",
             "-r", fps,
             "-s", resolution,
-            self.output_path_path
+            self.output_file_path
         ]
 
         process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -169,13 +173,18 @@ class FFmpegUI:
         recording_frame = ttk.Frame(self.notebook)
         self.notebook.add(recording_frame, text="Screen Capture")
 
-        ttk.Button(recording_frame, text="Start Recording", command=self.start_screen_recording, width=80) \
-            .grid(row=0, column=0, columnspan=2, pady=10)
+        self.start_capture_button = ttk.Button(recording_frame, text="Start Recording",
+                                               command=self.start_screen_recording, width=80)
+        self.start_capture_button.grid(row=0, column=0, columnspan=2, pady=10)
 
-        ttk.Button(recording_frame, text="Stop", command=self.stop_screen_recording, width=80) \
-            .grid(row=1, column=1, columnspan=2, pady=10)
+        self.stop_capture_button = ttk.Button(recording_frame, text="Stop",
+                                              command=self.stop_screen_recording, width=80)
+        self.stop_capture_button.grid(row=1, column=1, columnspan=2, pady=10)
+        self.stop_capture_button["state"] = "disabled"
 
     def start_screen_recording(self):
+
+        output_path = self.get_output_path()
 
         cmd = [
             "ffmpeg",
@@ -186,10 +195,18 @@ class FFmpegUI:
             # fps
             "-r", "60",
             "-i", f":0.0+0,0",
-            # codec audio
+            # audio format
+            "-f", "alsa",
+            # audio default device
+            "-i", "default",
+            # codec video
             "-c:v", "libx264",
+            # codec audio
+            "-c:a", "aac",
+            # mandatory for aac
+            "-strict", "experimental",
             # output name
-            "./ffmpeg_captured.mp4"
+            output_path
         ]
 
         self.ffmpeg_process = subprocess.Popen(cmd)
@@ -197,6 +214,13 @@ class FFmpegUI:
 
         # Visual indicator turning red while recording
         self.recording_indicator_id = self.recording_indicator.create_oval(5, 5, 15, 15, fill="red")
+        self.start_capture_button["state"] = "disabled"
+        self.stop_capture_button["state"] = "normal"
+
+    def get_output_path(self):
+        output = filedialog.asksaveasfilename(confirmoverwrite=False, defaultextension=".mp4",
+                                              filetypes=[("Video files", "*.mp4")])
+        return output
 
     def stop_screen_recording(self):
 
@@ -205,3 +229,5 @@ class FFmpegUI:
 
         # Turn off visual indicator
         self.recording_indicator.delete(self.recording_indicator_id)
+        self.start_capture_button["state"] = "normal"
+        self.stop_capture_button["state"] = "disabled"

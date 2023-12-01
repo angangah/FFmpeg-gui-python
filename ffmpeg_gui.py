@@ -1,5 +1,5 @@
 import tkinter as tk
-from ffmpeg_ui import FFmpegUI
+from frame_builder import FFmpegUI
 
 root = tk.Tk()
 ffmpeg_gui = FFmpegUI(root)
