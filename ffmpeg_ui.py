@@ -204,4 +204,4 @@ class FFmpegUI:
         print("Stopped.")
 
         # Turn off visual indicator
-        self.recording_indicator.delete(self.recording_indicator_id )
+        self.recording_indicator.delete(self.recording_indicator_id)
